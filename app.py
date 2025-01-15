@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 import yfinance as yf
 
@@ -7,7 +9,7 @@ def get_stock_data(symbol):
     stock = yf.Ticker(symbol)
     try:
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)  # Get 1 year of data
+        start_date = end_date - timedelta(days=400)  # Get more than 1 year of data for rolling windows
         price_data = stock.history(start=start_date, end=end_date)
 
         if price_data.empty:
@@ -22,52 +24,92 @@ def get_stock_data(symbol):
         latest_data = price_data.iloc[-1]
         current_price = latest_data['Close']
 
-        # Determine if the stock has broken the moving averages
-        signals = {
-            '200_SMA_Broken': current_price > latest_data['200_SMA'],
-            '100_SMA_Broken': current_price > latest_data['100_SMA'],
-            '50_SMA_Broken': current_price > latest_data['50_SMA'],
-            '20_SMA_Broken': current_price > latest_data['20_SMA']
-        }
+        # Determine highest order of MA broken and trend direction
+        highest_ma_broken = 'None'
+        trend = "Neutral"  # Default to neutral trend
+        trend_color = "grey"
+
+        # Check moving averages in descending order of importance
+        if not np.isnan(latest_data['200_SMA']):
+            prev_2_data = price_data.iloc[-3:]['Close']  # Check last 3 days' closing prices
+            if (prev_2_data.iloc[-1] > latest_data['200_SMA']) and (prev_2_data.iloc[-2] <= latest_data['200_SMA']):
+                highest_ma_broken = '200 Day MA'
+                trend = "Upward"
+                trend_color = "green"
+            elif (prev_2_data.iloc[-1] < latest_data['200_SMA']) and (prev_2_data.iloc[-2] >= latest_data['200_SMA']):
+                highest_ma_broken = '200 Day MA'
+                trend = "Downward"
+                trend_color = "red"
+
+        if highest_ma_broken == 'None' and not np.isnan(latest_data['100_SMA']):
+            if (prev_2_data.iloc[-1] > latest_data['100_SMA']) and (prev_2_data.iloc[-2] <= latest_data['100_SMA']):
+                highest_ma_broken = '100 Day MA'
+                trend = "Upward"
+                trend_color = "green"
+            elif (prev_2_data.iloc[-1] < latest_data['100_SMA']) and (prev_2_data.iloc[-2] >= latest_data['100_SMA']):
+                highest_ma_broken = '100 Day MA'
+                trend = "Downward"
+                trend_color = "red"
+
+        if highest_ma_broken == 'None' and not np.isnan(latest_data['50_SMA']):
+            if (prev_2_data.iloc[-1] > latest_data['50_SMA']) and (prev_2_data.iloc[-2] <= latest_data['50_SMA']):
+                highest_ma_broken = '50 Day MA'
+                trend = "Upward"
+                trend_color = "green"
+            elif (prev_2_data.iloc[-1] < latest_data['50_SMA']) and (prev_2_data.iloc[-2] >= latest_data['50_SMA']):
+                highest_ma_broken = '50 Day MA'
+                trend = "Downward"
+                trend_color = "red"
+
+        if highest_ma_broken == 'None' and not np.isnan(latest_data['20_SMA']):
+            if (prev_2_data.iloc[-1] > latest_data['20_SMA']) and (prev_2_data.iloc[-2] <= latest_data['20_SMA']):
+                highest_ma_broken = '20 Day MA'
+                trend = "Upward"
+                trend_color = "green"
+            elif (prev_2_data.iloc[-1] < latest_data['20_SMA']) and (prev_2_data.iloc[-2] >= latest_data['20_SMA']):
+                highest_ma_broken = '20 Day MA'
+                trend = "Downward"
+                trend_color = "red"
 
         return price_data, {
             'Symbol': symbol,
             'Latest Price': current_price,
-            '200 Day MA Broken': 'Yes' if signals['200_SMA_Broken'] else 'No',
-            '100 Day MA Broken': 'Yes' if signals['100_SMA_Broken'] else 'No',
-            '50 Day MA Broken': 'Yes' if signals['50_SMA_Broken'] else 'No',
-            '20 Day MA Broken': 'Yes' if signals['20_SMA_Broken'] else 'No',
-
-            #'100 Day MA Broken': 'Yes' if signals['200_SMA_Broken'] is False and signals['100_SMA_Broken'] else 'No',
-            #'50 Day MA Broken': 'Yes' if signals['200_SMA_Broken'] is False and signals['100_SMA_Broken'] is False and signals['50_SMA_Broken'] else 'No',
-            #'20 Day MA Broken': 'Yes' if signals['200_SMA_Broken'] is False and signals['100_SMA_Broken'] is False and signals['50_SMA_Broken'] is False and signals['20_SMA_Broken'] else 'No'
+            'Highest Order of MA Broken': highest_ma_broken,
+            'Trend': trend,
+            'Trend Color': trend_color
         }
     except Exception as e:
         st.error(f"Error processing symbol {symbol}: {e}")
         return None, None
 
+# Streamlit app
 def main():
-    st.title("Moving Average Signals")
+    st.title("Stock Moving Average Breakout Analysis")
 
-    # Sidebar for user input
-    st.sidebar.header("Stock Input")
-    symbols = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BSE").split(',')
+    # Sidebar input
+    symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BSE,ADANIGREEN")
+    symbols = [symbol.strip().upper() for symbol in symbols_input.split(',')]
 
     # Fetch data and process
     results = []
     for symbol in symbols:
-        symbol = symbol.strip().upper()
-        symbol = symbol +'.NS'
-        if symbol:
-            _, result = get_stock_data(symbol)
-            if result:
-                results.append(result)
+        symbol += '.NS'
+        _, result = get_stock_data(symbol)
+        if result:
+            results.append(result)
 
     # Display results
     if results:
         results_df = pd.DataFrame(results)
         st.subheader("Stock Signals")
-        st.dataframe(results_df)
+
+        # Highlight based on trend color
+        def highlight_trend(row):
+            color = row['Trend Color']
+            return [f'background-color: {color}' for _ in row]
+
+        styled_df = results_df.style.apply(highlight_trend, axis=1)
+        st.dataframe(styled_df, use_container_width=True)
 
 if __name__ == "__main__":
     main()
