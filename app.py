@@ -91,7 +91,9 @@ def get_fundamental_data(symbol):
 
         # Extract fundamental metrics
         eps = key_stats.get("trailingEps", "N/A")
-        pe_ratio = round(info.get("trailingPE", "N/A"),2)
+        pe_ratio = info.get("trailingPE", "N/A")
+        if pe_ratio != "N/A":
+            pe_ratio = round(float(pe_ratio),2)
         sector = info.get("sector", "N/A")
         market_cap = info.get('marketCap', 'N/A') // 10000000
         revenue_growth = financials.get("revenueGrowth", "N/A")
@@ -131,6 +133,12 @@ def main():
             st.error("Uploaded CSV must have a 'symbol' column.")
             return
         symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
+
+        #Reset session state to ensure new data is processed
+        if "uploaded_symbols" not in st.session_state or st.session_state["uploaded_symbols"] != symbols:
+            st.session_state.clear()  # Reset session state if new file is uploaded
+            st.session_state["uploaded_symbols"] = symbols  # Store uploaded symbols
+    
     else:
         symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="TCS,INFY,HDFCBANK,RELIANCE")
         symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
@@ -148,7 +156,7 @@ def main():
         default_value = default_weights[i] if i < len(default_weights) else 10
         ma_weights[f"{days} Day MA"] = st.sidebar.number_input(f"{days} Day MA Weight", min_value=0, max_value=100, value=default_value)
 
-    if "technical_data" not in st.session_state:
+    if "technical_data" not in st.session_state or st.session_state["uploaded_symbols"] != symbols:
         results = []
         for symbol in symbols:
             _, result = get_stock_data(symbol, ma_days, ma_weights)
@@ -157,6 +165,7 @@ def main():
 
         if results:
             st.session_state["technical_data"] = results
+            st.session_state["uploaded_symbols"] = symbols
 
     else:
         results = st.session_state["technical_data"]
@@ -185,7 +194,11 @@ def main():
 
         if selected_stock:
             stock_symbol = selected_stock + ".NS"
-            fundamentals = get_fundamental_data(stock_symbol)
+            if "fundamental_data" not in st.session_state or st.session_state["last_selected"] != stock_symbol:
+                st.session_state["fundamental_data"] = get_fundamental_data(stock_symbol)
+                st.session_state["last_selected"] = stock_symbol
+
+            fundamentals = st.session_state["fundamental_data"]
 
             if fundamentals:
                 st.subheader(f"Fundamental Data for {selected_stock}")
