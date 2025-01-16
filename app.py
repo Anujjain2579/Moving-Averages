@@ -33,27 +33,29 @@ def get_stock_data(symbol):
             '20 Day MA': {'value': latest_data['20_SMA'], 'broken': 'No'}
         }
 
-        # Check moving averages in descending order of importance
+        # Check moving averages individually
         for ma_name, details in ma_columns.items():
             if not np.isnan(details['value']):
                 prev_2_data = price_data.iloc[-3:]['Close']
                 if (prev_2_data.iloc[-1] > details['value']) and (prev_2_data.iloc[-2] <= details['value']):
+                    details['broken'] = 'Yes'
                     highest_ma_broken = ma_name
                     trend = "Upward"
                     trend_color = "green"
-                    details['broken'] = 'Yes'
                 elif (prev_2_data.iloc[-1] < details['value']) and (prev_2_data.iloc[-2] >= details['value']):
+                    details['broken'] = 'Yes'
                     highest_ma_broken = ma_name
                     trend = "Downward"
                     trend_color = "red"
-                    details['broken'] = 'Yes'
+                else:
+                    details['broken'] = 'No'
 
         # Check if stock is above or below all MAs
         above_below = "-"
         if all(current_price > details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
             above_below = "Above All"
         elif all(current_price < details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
-            above_below = "Below All"
+            above_below = "Below All"   
 
         # Scoring system: +100 to -100
         weights = {'200 Day MA': 50, '50 Day MA': 15, '20 Day MA': 10}
