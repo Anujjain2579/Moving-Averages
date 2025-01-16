@@ -28,54 +28,56 @@ def get_stock_data(symbol):
         highest_ma_broken = 'None'
         trend = "Neutral"  # Default to neutral trend
         trend_color = "#d3d3d3"
+        ma_columns = {
+            '200 Day MA': {'value': latest_data['200_SMA'], 'broken': 'No'},
+            '100 Day MA': {'value': latest_data['100_SMA'], 'broken': 'No'},
+            '50 Day MA': {'value': latest_data['50_SMA'], 'broken': 'No'},
+            '20 Day MA': {'value': latest_data['20_SMA'], 'broken': 'No'}
+        }
 
         # Check moving averages in descending order of importance
-        if not np.isnan(latest_data['200_SMA']):
-            prev_2_data = price_data.iloc[-3:]['Close']  # Check last 3 days' closing prices
-            if (prev_2_data.iloc[-1] > latest_data['200_SMA']) and (prev_2_data.iloc[-2] <= latest_data['200_SMA']):
-                highest_ma_broken = '200 Day MA'
-                trend = "Upward"
-                trend_color = "green"
-            elif (prev_2_data.iloc[-1] < latest_data['200_SMA']) and (prev_2_data.iloc[-2] >= latest_data['200_SMA']):
-                highest_ma_broken = '200 Day MA'
-                trend = "Downward"
-                trend_color = "red"
+        for ma_name, details in ma_columns.items():
+            if not np.isnan(details['value']):
+                prev_2_data = price_data.iloc[-3:]['Close']
+                if (prev_2_data.iloc[-1] > details['value']) and (prev_2_data.iloc[-2] <= details['value']):
+                    highest_ma_broken = ma_name
+                    trend = "Upward"
+                    trend_color = "green"
+                    details['broken'] = 'Yes'
+                    break
+                elif (prev_2_data.iloc[-1] < details['value']) and (prev_2_data.iloc[-2] >= details['value']):
+                    highest_ma_broken = ma_name
+                    trend = "Downward"
+                    trend_color = "red"
+                    details['broken'] = 'Yes'
+                    break
 
-        if highest_ma_broken == 'None' and not np.isnan(latest_data['100_SMA']):
-            if (prev_2_data.iloc[-1] > latest_data['100_SMA']) and (prev_2_data.iloc[-2] <= latest_data['100_SMA']):
-                highest_ma_broken = '100 Day MA'
-                trend = "Upward"
-                trend_color = "green"
-            elif (prev_2_data.iloc[-1] < latest_data['100_SMA']) and (prev_2_data.iloc[-2] >= latest_data['100_SMA']):
-                highest_ma_broken = '100 Day MA'
-                trend = "Downward"
-                trend_color = "red"
+        # Scoring system
+        weights = {'200 Day MA': 50, '100 Day MA': 25, '50 Day MA': 15, '20 Day MA': 10}
+        score = 100  # Start with max score
+        for ma_name, weight in weights.items():
+            if ma_columns[ma_name]['broken'] == 'Yes':
+                break
+            score -= weight
 
-        if highest_ma_broken == 'None' and not np.isnan(latest_data['50_SMA']):
-            if (prev_2_data.iloc[-1] > latest_data['50_SMA']) and (prev_2_data.iloc[-2] <= latest_data['50_SMA']):
-                highest_ma_broken = '50 Day MA'
-                trend = "Upward"
-                trend_color = "green"
-            elif (prev_2_data.iloc[-1] < latest_data['50_SMA']) and (prev_2_data.iloc[-2] >= latest_data['50_SMA']):
-                highest_ma_broken = '50 Day MA'
-                trend = "Downward"
-                trend_color = "red"
+        # Adjust '-' for lower priority moving averages
+        found_yes = False
+        for ma_name in ma_columns:
+            if found_yes:
+                ma_columns[ma_name]['broken'] = '-'
+            elif ma_columns[ma_name]['broken'] == 'Yes':
+                found_yes = True
 
-        if highest_ma_broken == 'None' and not np.isnan(latest_data['20_SMA']):
-            if (prev_2_data.iloc[-1] > latest_data['20_SMA']) and (prev_2_data.iloc[-2] <= latest_data['20_SMA']):
-                highest_ma_broken = '20 Day MA'
-                trend = "Upward"
-                trend_color = "green"
-            elif (prev_2_data.iloc[-1] < latest_data['20_SMA']) and (prev_2_data.iloc[-2] >= latest_data['20_SMA']):
-                highest_ma_broken = '20 Day MA'
-                trend = "Downward"
-                trend_color = "red"
         return price_data, {
             'Symbol': symbol.removesuffix(".NS"),
             'Latest Price': current_price,
-            'Highest Order of MA Broken': highest_ma_broken,
+            '200 Day MA': ma_columns['200 Day MA']['broken'],
+            '100 Day MA': ma_columns['100 Day MA']['broken'],
+            '50 Day MA': ma_columns['50 Day MA']['broken'],
+            '20 Day MA': ma_columns['20 Day MA']['broken'],
+            'Score': score,
             'Trend': trend,
-            'Trend Color': trend_color
+            'Trend Color': trend_color  # Keep as last column
         }
     except Exception as e:
         st.error(f"Error processing symbol {symbol}: {e}")
@@ -86,8 +88,17 @@ def main():
     st.title("Stock Moving Average Breakout Analysis")
 
     # Sidebar input
-    symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BSE,ADANIGREEN")
+    symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BIOCON,EICHERMOT,TRENT,LT,SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE")
     symbols = [symbol.strip().upper() for symbol in symbols_input.split(',')]
+
+    # Scoring weights
+    st.sidebar.subheader("Scoring Weights")
+    weights = {
+        '200 Day MA': st.sidebar.number_input("200 Day MA Weight", min_value=0, max_value=100, value=50),
+        '100 Day MA': st.sidebar.number_input("100 Day MA Weight", min_value=0, max_value=100, value=25),
+        '50 Day MA': st.sidebar.number_input("50 Day MA Weight", min_value=0, max_value=100, value=15),
+        '20 Day MA': st.sidebar.number_input("20 Day MA Weight", min_value=0, max_value=100, value=10)
+    }
 
     # Fetch data and process
     results = []
@@ -95,6 +106,12 @@ def main():
         symbol += '.NS'
         _, result = get_stock_data(symbol)
         if result:
+            # Adjust scores based on user weights
+            result['Score'] = 100
+            for ma_name, weight in weights.items():
+                if result[ma_name] == 'Yes':
+                    break
+                result['Score'] -= weight
             results.append(result)
 
     # Display results
@@ -106,8 +123,8 @@ def main():
         def highlight_trend(row):
             color = row['Trend Color']
             return [f'background-color: {color}' for _ in row]
-        
-        styled_df = results_df.drop(columns=['Trend Color'])
+
+        # Create a styled DataFrame with colors
         styled_df = results_df.style.apply(highlight_trend, axis=1)
         st.dataframe(styled_df, use_container_width=True)
 
