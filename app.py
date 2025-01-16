@@ -27,7 +27,7 @@ def get_stock_data(symbol):
         # Determine highest order of MA broken and trend direction
         highest_ma_broken = 'None'
         trend = "Neutral"  # Default to neutral trend
-        trend_color = "grey"
+        trend_color = "#d3d3d3"
 
         # Check moving averages in descending order of importance
         if not np.isnan(latest_data['200_SMA']):
@@ -70,9 +70,8 @@ def get_stock_data(symbol):
                 highest_ma_broken = '20 Day MA'
                 trend = "Downward"
                 trend_color = "red"
-
         return price_data, {
-            'Symbol': symbol,
+            'Symbol': symbol.removesuffix(".NS"),
             'Latest Price': current_price,
             'Highest Order of MA Broken': highest_ma_broken,
             'Trend': trend,
@@ -107,7 +106,8 @@ def main():
         def highlight_trend(row):
             color = row['Trend Color']
             return [f'background-color: {color}' for _ in row]
-
+        
+        styled_df = results_df.drop(columns=['Trend Color'])
         styled_df = results_df.style.apply(highlight_trend, axis=1)
         st.dataframe(styled_df, use_container_width=True)
 
