@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 
 # Function to fetch stock data
-def get_stock_data(symbol):
+def get_stock_data(symbol, ma_days, ma_weights):
     stock = yf.Ticker(symbol)
     try:
         end_date = datetime.now()
@@ -15,10 +15,12 @@ def get_stock_data(symbol):
         if price_data.empty:
             return None, None
 
-        # Calculate moving averages
-        price_data['20_SMA'] = price_data['Close'].rolling(window=20).mean()
-        price_data['50_SMA'] = price_data['Close'].rolling(window=50).mean()
-        price_data['200_SMA'] = price_data['Close'].rolling(window=200).mean()
+        # Calculate moving averages dynamically based on user input
+        ma_columns = {}
+        for days in ma_days:
+            column_name = f"{days} Day MA"
+            price_data[column_name] = price_data['Close'].rolling(window=days).mean()
+            ma_columns[column_name] = {'value': price_data[column_name].iloc[-1], 'broken': 'No'}
 
         latest_data = price_data.iloc[-1]
         current_price = latest_data['Close']
@@ -27,11 +29,6 @@ def get_stock_data(symbol):
         highest_ma_broken = 'None'
         trend = "Neutral"  # Default to neutral trend
         trend_color = "#d3d3d3"
-        ma_columns = {
-            '200 Day MA': {'value': latest_data['200_SMA'], 'broken': 'No'},
-            '50 Day MA': {'value': latest_data['50_SMA'], 'broken': 'No'},
-            '20 Day MA': {'value': latest_data['20_SMA'], 'broken': 'No'}
-        }
 
         # Check moving averages individually
         for ma_name, details in ma_columns.items():
@@ -49,42 +46,41 @@ def get_stock_data(symbol):
                     trend_color = "red"
                 else:
                     details['broken'] = 'No'
-
         # Check if stock is above or below all MAs
         above_below = "-"
         if all(current_price > details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
             above_below = "Above All"
         elif all(current_price < details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
-            above_below = "Below All"   
+            above_below = "Below All"
 
         # Scoring system: +100 to -100
-        weights = {'200 Day MA': 50, '50 Day MA': 30, '20 Day MA': 20}
         score = 0  # Start with neutral score
-        for ma_name, weight in weights.items():
-            if ma_columns[ma_name]['broken'] == 'Yes':
+        for ma_name, weight in ma_weights.items():
+            if ma_columns.get(ma_name, {}).get('broken') == 'Yes':
                 if trend == "Upward":
                     score += weight
                 elif trend == "Downward":
                     score -= weight
 
-        return price_data, {
+        result_data = {
             'Symbol': symbol.removesuffix(".NS"),
             'Latest Price': current_price,
-            '200 Day MA': ma_columns['200 Day MA']['broken'],
-            '50 Day MA': ma_columns['50 Day MA']['broken'],
-            '20 Day MA': ma_columns['20 Day MA']['broken'],
             'Above/Below All': above_below,
             'Score': score,
             'Trend': trend,
             '_trend_color': trend_color  # Keep as last column
         }
+        for ma_name in ma_columns:
+            result_data[ma_name] = ma_columns[ma_name]['broken']
+
+        return price_data, result_data
     except Exception as e:
         st.error(f"Error processing symbol {symbol}: {e}")
         return None, None
 
 # Streamlit app
 def main():
-    st.title("Stock Moving Average Recent Breakouts")
+    st.title("Stock Moving Average Breakout Analysis")
 
     # Sidebar input
     st.sidebar.subheader("Upload or Enter Tickers")
@@ -99,31 +95,27 @@ def main():
         symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
     else:
         # Manual input
-        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BSE,ADANIGREEN")
+        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="ARVIND,TRENT,LT,SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE")
         symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
 
+    # Moving averages selection
+    st.sidebar.subheader("Moving Averages Settings")
+    ma_days = st.sidebar.text_input("Enter MA Days (comma-separated, e.g., 200,50,20)", value="200,50,20")
+    ma_days = sorted([int(x.strip()) for x in ma_days.split(',') if x.strip().isdigit()], reverse=True)
 
     # Scoring weights
     st.sidebar.subheader("Scoring Weights")
-    weights = {
-        '200 Day MA': st.sidebar.number_input("200 Day MA Weight", min_value=0, max_value=100, value=50),
-        '50 Day MA': st.sidebar.number_input("50 Day MA Weight", min_value=0, max_value=100, value=15),
-        '20 Day MA': st.sidebar.number_input("20 Day MA Weight", min_value=0, max_value=100, value=10)
-    }
+    default_weights = [50, 30, 20]  # Default weights for top 3 MAs
+    ma_weights = {}
+    for i, days in enumerate(ma_days):
+        default_value = default_weights[i] if i < len(default_weights) else 10
+        ma_weights[f"{days} Day MA"] = st.sidebar.number_input(f"{days} Day MA Weight", min_value=0, max_value=100, value=default_value)
 
     # Fetch data and process
     results = []
     for symbol in symbols:
-        _, result = get_stock_data(symbol)
+        _, result = get_stock_data(symbol, ma_days, ma_weights)
         if result:
-            # Adjust scores based on user weights
-            result['Score'] = 0
-            for ma_name, weight in weights.items():
-                if result[ma_name] == 'Yes':
-                    if result['Trend'] == "Upward":
-                        result['Score'] += weight
-                    elif result['Trend'] == "Downward":
-                        result['Score'] -= weight
             results.append(result)
 
     # Display results
