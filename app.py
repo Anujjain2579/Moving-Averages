@@ -58,7 +58,7 @@ def get_stock_data(symbol):
             above_below = "Below All"   
 
         # Scoring system: +100 to -100
-        weights = {'200 Day MA': 50, '50 Day MA': 15, '20 Day MA': 10}
+        weights = {'200 Day MA': 50, '50 Day MA': 30, '20 Day MA': 20}
         score = 0  # Start with neutral score
         for ma_name, weight in weights.items():
             if ma_columns[ma_name]['broken'] == 'Yes':
