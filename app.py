@@ -84,11 +84,24 @@ def get_stock_data(symbol):
 
 # Streamlit app
 def main():
-    st.title("Stock Moving Average Breakout Analysis")
+    st.title("Stock Moving Average Recent Breakouts")
 
     # Sidebar input
-    symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="KALYANKJIL,BIOCON,EICHERMOT,TRENT,LT,SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE")
-    symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
+    st.sidebar.subheader("Upload or Enter Tickers")
+    uploaded_file = st.sidebar.file_uploader("Upload CSV with 'symbol' column", type="csv")
+
+    if uploaded_file is not None:
+        # Read uploaded CSV
+        df = pd.read_csv(uploaded_file)
+        if 'symbol' not in df.columns:
+            st.error("Uploaded CSV must have a 'symbol' column.")
+            return
+        symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
+    else:
+        # Manual input
+        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="BSE,ADANIGREEN")
+        symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
+
 
     # Scoring weights
     st.sidebar.subheader("Scoring Weights")
