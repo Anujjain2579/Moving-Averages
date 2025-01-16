@@ -4,12 +4,13 @@ import numpy as np
 from datetime import datetime, timedelta
 import yfinance as yf
 from yahooquery import Ticker  # Used to fetch fundamental data
-
+import pytz
 # Function to fetch stock data
 def get_stock_data(symbol, ma_days, ma_weights):
     stock = yf.Ticker(symbol)
     try:
-        end_date = datetime.now()
+        ist = pytz.timezone('Asia/Kolkata')
+        end_date = datetime.now(ist)
         start_date = end_date - timedelta(days=400)  # Get more than 1 year of data for rolling windows
         price_data = stock.history(start=start_date, end=end_date)
 
