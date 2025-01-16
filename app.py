@@ -140,7 +140,7 @@ def main():
             st.session_state["uploaded_symbols"] = symbols  # Store uploaded symbols
     
     else:
-        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="TCS,INFY,HDFCBANK,RELIANCE")
+        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE,ANGELONE,IRFC,IRCON,NMDC,TCS,LT")
         symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
 
     # Moving averages selection
