@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import yfinance as yf
+from yahooquery import Ticker  # Used to fetch fundamental data
 
 # Function to fetch stock data
 def get_stock_data(symbol, ma_days, ma_weights):
@@ -46,6 +47,7 @@ def get_stock_data(symbol, ma_days, ma_weights):
                     trend_color = "red"
                 else:
                     details['broken'] = 'No'
+        
         # Check if stock is above or below all MAs
         above_below = "-"
         if all(current_price > details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
@@ -78,24 +80,59 @@ def get_stock_data(symbol, ma_days, ma_weights):
         st.error(f"Error processing symbol {symbol}: {e}")
         return None, None
 
+# Function to fetch fundamental data
+def get_fundamental_data(symbol):
+    stock = Ticker(symbol)
+    try:
+        info = yf.Ticker(symbol).info
+        key_stats = stock.key_stats[symbol]
+        financials = stock.financial_data[symbol]
+        income_statement = stock.income_statement(frequency="a")
+
+        # Extract fundamental metrics
+        eps = key_stats.get("trailingEps", "N/A")
+        pe_ratio = round(info.get("trailingPE", "N/A"),2)
+        sector = info.get("sector", "N/A")
+        market_cap = info.get('marketCap', 'N/A') // 10000000
+        revenue_growth = financials.get("revenueGrowth", "N/A")
+        fii_dii_holding = key_stats.get("heldPercentInstitutions", "N/A")
+
+        # Get revenue growth manually if not available
+        if revenue_growth == "N/A" and not income_statement.empty:
+            sorted_revenue = income_statement.sort_values(by="asOfDate", ascending=False)
+            if len(sorted_revenue) > 1:
+                latest_revenue = sorted_revenue.iloc[0]["TotalRevenue"]
+                previous_revenue = sorted_revenue.iloc[1]["TotalRevenue"]
+                revenue_growth = ((latest_revenue - previous_revenue) / previous_revenue) * 100
+
+        return {
+            "Earnings Per Share (EPS)": eps,
+            "P/E Ratio": pe_ratio,
+            "Revenue Growth (YoY)": f"{revenue_growth:.2f}%" if revenue_growth != "N/A" else "N/A",
+            "Institutional Holdings (FII/DII %)": f"{fii_dii_holding * 100:.2f}%" if fii_dii_holding != "N/A" else "N/A",
+            "Sector": sector,
+            "Market Cap in Cr.": market_cap
+        }
+    except Exception as e:
+        st.error(f"Error fetching fundamentals for {symbol}: {e}")
+        return None
+
 # Streamlit app
 def main():
     st.title("Stock Moving Average Breakout Analysis")
 
     # Sidebar input
     st.sidebar.subheader("Upload or Enter Tickers")
-    uploaded_file = st.sidebar.file_uploader("Upload CSV with 'symbol' column", type="csv")
+    uploaded_file = st.sidebar.file_uploader("Upload CSV with a single 'symbol' column without empty rows.", type="csv")
 
     if uploaded_file is not None:
-        # Read uploaded CSV
         df = pd.read_csv(uploaded_file)
         if 'symbol' not in df.columns:
             st.error("Uploaded CSV must have a 'symbol' column.")
             return
         symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
     else:
-        # Manual input
-        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="ARVIND,TRENT,LT,SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE")
+        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="TCS,INFY,HDFCBANK,RELIANCE")
         symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
 
     # Moving averages selection
@@ -111,13 +148,18 @@ def main():
         default_value = default_weights[i] if i < len(default_weights) else 10
         ma_weights[f"{days} Day MA"] = st.sidebar.number_input(f"{days} Day MA Weight", min_value=0, max_value=100, value=default_value)
 
-    # Fetch data and process
-    results = []
-    for symbol in symbols:
-        _, result = get_stock_data(symbol, ma_days, ma_weights)
-        if result:
-            results.append(result)
+    if "technical_data" not in st.session_state:
+        results = []
+        for symbol in symbols:
+            _, result = get_stock_data(symbol, ma_days, ma_weights)
+            if result:
+                results.append(result)
 
+        if results:
+            st.session_state["technical_data"] = results
+
+    else:
+        results = st.session_state["technical_data"]
     # Display results
     if results:
         results_df = pd.DataFrame(results)
@@ -136,7 +178,37 @@ def main():
             return [f'background-color: {color}' for _ in row]
 
         styled_df = results_df.style.apply(highlight_trend, axis=1)
-        st.dataframe(styled_df, use_container_width=True)
+        selected_row = st.dataframe(styled_df, use_container_width=True)
+        st.subheader("Stock Signals")
+        # Get fundamentals for the selected stock on hover/click
+        selected_stock = st.selectbox("Select a stock to view fundamentals", results_df['Symbol'].tolist())
+
+        if selected_stock:
+            stock_symbol = selected_stock + ".NS"
+            fundamentals = get_fundamental_data(stock_symbol)
+
+            if fundamentals:
+                st.subheader(f"Fundamental Data for {selected_stock}")
+
+                # Display key fundamental metrics
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Earnings Per Share (EPS)", fundamentals["Earnings Per Share (EPS)"])
+                col2.metric("P/E Ratio", fundamentals["P/E Ratio"])
+                col3.metric("Market Cap in Cr.", fundamentals["Market Cap in Cr."])
+
+                col4, col5= st.columns(2)
+                col4.metric("Revenue Growth (YoY)", fundamentals["Revenue Growth (YoY)"])
+                col5.metric("Institutional Holdings (FII/DII %)", fundamentals["Institutional Holdings (FII/DII %)"])
+                #col6.metric("Sector", fundamentals["Sector"])
+                                # Display Sector with smaller font using markdown & CSS
+                st.markdown(
+                    f"""
+                    <div style="text-align: center; font-size:16px; font-weight:bold; background-color:#f0f0f0; padding:8px; border-radius:5px; display:inline-block;">
+                        Sector: {fundamentals["Sector"]}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 if __name__ == "__main__":
     main()
