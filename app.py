@@ -26,8 +26,22 @@ NIFTY_NEXT_300 = ['IRCON.NS', 'GRAPHITE.NS', 'KSB.NS', 'ACE.NS', 'WHIRLPOOL.NS',
                     'RCF.NS', 'DEEPAKNTR.NS', 'JPPOWER.NS', 'LEMONTREE.NS', 'COROMANDEL.NS', 'AADHARHFC.NS', 'SWANENERGY.NS', 'GRINDWELL.NS', 'JBMA.NS', 'SCHAEFFLER.NS', 'J&KBANK.NS', 'JKCEMENT.NS', 'NH.NS', 'TANLA.NS', 'SUNDRMFAST.NS', 'PRAJIND.NS', 'DEEPAKFERT.NS', 'FLUOROCHEM.NS', 'NCC.NS', 'ASTERDM.NS', 'JWL.NS', 'SOBHA.NS', 'KAYNES.NS', 'PPLPHARMA.NS', 'RAMCOCEM.NS', 'VARROC.NS', 'GODREJIND.NS',
                     'KIRLOSENG.NS', 'CENTURYPLY.NS', 'FINCABLES.NS', 'ZEEL.NS', 'FORTIS.NS', 'CGCL.NS', 'GAEL.NS', 'CREDITACC.NS', 'GILLETTE.NS', 'BLUEDART.NS', 'SBFC.NS', 'EQUITASBNK.NS', 'CIEINDIA.NS', 'NETWORK18.NS', 'MAPMYINDIA.NS', 'ARE&M.NS', 'AARTIIND.NS', 'AWL.NS', 'GRINFRA.NS', 'ECLERX.NS', 'NAM-INDIA.NS', 'HOMEFIRST.NS', 'REDINGTON.NS', 'RHIM.NS', 'CYIENT.NS', 'HBLENGINE.NS', 'MAHSEAMLES.NS',
                     'CHOLAHLDNG.NS', 'UBL.NS', 'ENGINERSIN.NS', 'LTTS.NS', 'TBOTEK.NS']
+def get_one_month_return(symbol):
+    stock = yf.Ticker(symbol)
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    
+    price_data = stock.history(start=start_date, end=end_date)
+    if price_data.empty:
+        return None
+    
+    first_price = price_data['Close'].iloc[0]
+    last_price = price_data['Close'].iloc[-1]
+    
+    return ((last_price - first_price) / first_price) * 100
+
 # Function to fetch stock data
-def get_stock_data(symbol, ma_days, ma_weights):
+def get_stock_data(symbol, ma_days, ma_weights, nifty_return):
     stock = yf.Ticker(symbol)
     try:
         ist = pytz.timezone('Asia/Kolkata')
@@ -110,13 +124,16 @@ def get_stock_data(symbol, ma_days, ma_weights):
                 else:
                     ma_crossovers[f"{short_ma} crossing {long_ma}"] = "No"
                  
-
+        # Calculate 1-month relative strength vs NIFTY
+        stock_return = get_one_month_return(symbol)
+        relative_strength = (stock_return - nifty_return) if stock_return is not None else None
         result_data = {
             'Symbol': symbol.removesuffix(".NS"),
             'Latest Price': current_price,
             #'Above/Below All': above_below,
             'Score': score,
             'Trend': trend,
+            'Relative Strength vs NIFTY (%)': f"{relative_strength:.2f}" if relative_strength is not None else "N/A",
             '_trend_color': trend_color  # Keep as last column
         }
         result_data.update(ma_comparison) 
@@ -213,6 +230,7 @@ def main():
     ma_days = st.sidebar.text_input("Enter MA Days (comma-separated, e.g., 200,50,20)", value="200,50,20")
     ma_days = sorted([int(x.strip()) for x in ma_days.split(',') if x.strip().isdigit()], reverse=True)
 
+    nifty_return = get_one_month_return("^NSEI")
     # Scoring weights
     st.sidebar.subheader("Scoring Weights")
     default_weights = [50, 30, 20]  # Default weights for top 3 MAs
@@ -224,7 +242,7 @@ def main():
     if "technical_data" not in st.session_state or st.session_state["uploaded_symbols"] != symbols:
         results = []
         for symbol in symbols:
-            _, result = get_stock_data(symbol, ma_days, ma_weights)
+            _, result = get_stock_data(symbol, ma_days, ma_weights, nifty_return)
             if result:
                 results.append(result)
 
