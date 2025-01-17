@@ -26,6 +26,7 @@ NIFTY_NEXT_300 = ['IRCON.NS', 'GRAPHITE.NS', 'KSB.NS', 'ACE.NS', 'WHIRLPOOL.NS',
                     'RCF.NS', 'DEEPAKNTR.NS', 'JPPOWER.NS', 'LEMONTREE.NS', 'COROMANDEL.NS', 'AADHARHFC.NS', 'SWANENERGY.NS', 'GRINDWELL.NS', 'JBMA.NS', 'SCHAEFFLER.NS', 'J&KBANK.NS', 'JKCEMENT.NS', 'NH.NS', 'TANLA.NS', 'SUNDRMFAST.NS', 'PRAJIND.NS', 'DEEPAKFERT.NS', 'FLUOROCHEM.NS', 'NCC.NS', 'ASTERDM.NS', 'JWL.NS', 'SOBHA.NS', 'KAYNES.NS', 'PPLPHARMA.NS', 'RAMCOCEM.NS', 'VARROC.NS', 'GODREJIND.NS',
                     'KIRLOSENG.NS', 'CENTURYPLY.NS', 'FINCABLES.NS', 'ZEEL.NS', 'FORTIS.NS', 'CGCL.NS', 'GAEL.NS', 'CREDITACC.NS', 'GILLETTE.NS', 'BLUEDART.NS', 'SBFC.NS', 'EQUITASBNK.NS', 'CIEINDIA.NS', 'NETWORK18.NS', 'MAPMYINDIA.NS', 'ARE&M.NS', 'AARTIIND.NS', 'AWL.NS', 'GRINFRA.NS', 'ECLERX.NS', 'NAM-INDIA.NS', 'HOMEFIRST.NS', 'REDINGTON.NS', 'RHIM.NS', 'CYIENT.NS', 'HBLENGINE.NS', 'MAHSEAMLES.NS',
                     'CHOLAHLDNG.NS', 'UBL.NS', 'ENGINERSIN.NS', 'LTTS.NS', 'TBOTEK.NS']
+
 def get_one_month_return(symbol):
     stock = yf.Ticker(symbol)
     end_date = datetime.now()
@@ -185,7 +186,7 @@ def get_fundamental_data(symbol):
 
 # Streamlit app
 def main():
-    st.title("Stock Moving Average Breakout Analysis")
+    st.title("Moving Average Breakout Analysis")
 
     st.sidebar.subheader("Stock Selection")
     selection_option = st.sidebar.selectbox("Select Stock Category", ["Upload CSV / Manual Entry", "NIFTY Top 50", "NIFTY NEXT 150", "NIFTY NEXT 300"])
@@ -271,7 +272,6 @@ def main():
 
         styled_df = results_df.style.apply(highlight_trend, axis=1)
         selected_row = st.dataframe(styled_df, use_container_width=True)
-        st.subheader("Stock Signals")
         # Get fundamentals for the selected stock on hover/click
         selected_stock = st.selectbox("Select a stock to view fundamentals", results_df['Symbol'].tolist())
 
