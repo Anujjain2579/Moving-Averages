@@ -59,14 +59,15 @@ def get_stock_data(symbol, ma_days, ma_weights):
         }
 
         # Trend Analysis Using Recent 5-Day Price Movement
-        last_5_prices = price_data['Close'].iloc[-5:].values
+        last_3_prices = price_data['Close'].iloc[-3:].values
+        three_day_avg = last_3_prices.mean()
         trend = "Neutral"
         trend_color = "gray"
 
-        if last_5_prices[-1] > last_5_prices[0]:  # Uptrend in last 5 days
+        if last_3_prices[-1] > three_day_avg:  # Uptrend in last 5 days
             trend = "Uptrend"
             trend_color = "#abf7b1"
-        elif last_5_prices[-1] < last_5_prices[0]:  # Downtrend in last 5 days
+        elif last_3_prices[-1] < three_day_avg:  # Downtrend in last 5 days
             trend = "Downtrend"
             trend_color = "#FF9A98"
         # Scoring system: +100 to -100
