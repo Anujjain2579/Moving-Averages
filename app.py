@@ -5,6 +5,27 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from yahooquery import Ticker  # Used to fetch fundamental data
 import pytz
+
+NIFTY_TOP_50 = ['ADANIENT.NS', 'ADANIPORTS.NS', 'APOLLOHOSP.NS', 'ASIANPAINT.NS', 'AXISBANK.NS', 'BAJAJ-AUTO.NS', 'BAJFINANCE.NS', 'BAJAJFINSV.NS', 'BEL.NS', 'BPCL.NS', 'BHARTIARTL.NS', 'BRITANNIA.NS', 'CIPLA.NS', 'COALINDIA.NS', 'DRREDDY.NS', 'EICHERMOT.NS', 'GRASIM.NS', 'HCLTECH.NS', 'HDFCBANK.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS', 'HINDALCO.NS', 'HINDUNILVR.NS',
+                'ICICIBANK.NS', 'INDUSINDBK.NS', 'INFY.NS', 'ITC.NS', 'JSWSTEEL.NS', 'KOTAKBANK.NS', 'LT.NS', 'M&M.NS', 'MARUTI.NS', 'NESTLEIND.NS', 'NTPC.NS', 'ONGC.NS', 'POWERGRID.NS', 'RELIANCE.NS', 'SBILIFE.NS', 'SHRIRAMFIN.NS', 'SBIN.NS', 'SUNPHARMA.NS', 'TCS.NS', 'TATACONSUM.NS', 'TATAMOTORS.NS', 'TATASTEEL.NS', 'TECHM.NS', 'TITAN.NS', 'TRENT.NS', 'ULTRACEMCO.NS', 'WIPRO.NS']
+NIFTY_NEXT_150 = ['ASTRAL.NS', 'PFC.NS', 'IGL.NS', 'GAIL.NS', 'AUBANK.NS', 'UNITDSPR.NS', 'VEDL.NS', 'LICI.NS', 'ZOMATO.NS', 'INDIANB.NS', 'HDFCAMC.NS', 'CUMMINSIND.NS', 'MAZDOCK.NS', 'ACC.NS', 'DELHIVERY.NS', 'BSE.NS', 'ALKEM.NS', 'BALKRISIND.NS', 'OFSS.NS', 'CGPOWER.NS', 'HUDCO.NS', 'INDUSTOWER.NS', 'ATGL.NS', 'MFSL.NS', 'POLICYBZR.NS', 'PAGEIND.NS', 'CONCOR.NS', 'FEDERALBNK.NS',
+                  'GMRAIRPORT.NS', 'TORNTPHARM.NS', 'BAJAJHLDNG.NS', 'EXIDEIND.NS', 'PIDILITIND.NS', 'LICHSGFIN.NS', 'ICICIPRULI.NS', 'ASHOKLEY.NS', 'PNB.NS', 'PAYTM.NS', 'KPITTECH.NS', 'UPL.NS', 'RECLTD.NS', 'IOB.NS', 'INDHOTEL.NS', 'TATAPOWER.NS', 'INDIGO.NS', 'ABCAPITAL.NS', 'MRPL.NS', 'VOLTAS.NS', 'JUBLFOOD.NS', 'PETRONET.NS', 'ICICIGI.NS', 'BHEL.NS', 'APLAPOLLO.NS',
+                'ABFRL.NS', 'SBICARD.NS', 'LODHA.NS', 'BHARTIHEXA.NS', 'NAUKRI.NS', 'SAIL.NS', 'SUZLON.NS', 'POLYCAB.NS', 'SUPREMEIND.NS', 'MANKIND.NS', 'CANBK.NS', 'NMDC.NS', 'IDEA.NS', 'MUTHOOTFIN.NS', 'MARICO.NS', 'MAHABANK.NS', 'JIOFIN.NS', 'OBEROIRLTY.NS', 'PERSISTENT.NS', 'OIL.NS', 'COLPAL.NS', 'IRFC.NS', 'ABB.NS', 'FACT.NS', 'IREDA.NS', 'PIIND.NS', 'TATATECH.NS', 'LUPIN.NS',
+                  'YESBANK.NS', 'UNIONBANK.NS', 'KALYANKJIL.NS', 'CHOLAFIN.NS', 'COFORGE.NS', 'PHOENIXLTD.NS', 'APOLLOTYRE.NS', 'NHPC.NS', 'JSWINFRA.NS', 'TVSMOTOR.NS', 'ZYDUSLIFE.NS', 'BOSCHLTD.NS', 'GODREJCP.NS', 'HINDPETRO.NS', 'MPHASIS.NS', 'SHREECEM.NS', 'BANKBARODA.NS', 'IOC.NS', 'M&MFIN.NS', 'COCHINSHIP.NS', 'PRESTIGE.NS', 'SUNDARMFIN.NS', 'BHARATFORG.NS', 'PATANJALI.NS',
+                    'IRB.NS', 'DABUR.NS', 'JSWENERGY.NS', 'VBL.NS', 'AMBUJACEM.NS', 'POONAWALLA.NS', 'GODREJPROP.NS', 'TIINDIA.NS', 'NYKAA.NS', 'SIEMENS.NS', 'BIOCON.NS', 'MOTHERSON.NS', 'DMART.NS', 'HINDZINC.NS', 'DIXON.NS', 'MRF.NS', 'LTIM.NS', 'MAXHEALTH.NS', 'TATACOMM.NS', 'NLCINDIA.NS', 'BANDHANBNK.NS', 'TATACHEM.NS', 'SRF.NS', 'AUROPHARMA.NS', 'ADANIPOWER.NS', 'JINDALSTEL.NS', 
+                    'IDBI.NS', 'RVNL.NS', 'TORNTPOWER.NS', 'HAVELLS.NS', 'IDFCFIRSTB.NS', 'SOLARINDS.NS', 'BDL.NS', 'TATAELXSI.NS', 'ESCORTS.NS', 'DIVISLAB.NS', 'LTF.NS', 'BANKINDIA.NS', 'HAL.NS', 'DLF.NS', 'SONACOMS.NS', 'ADANIENSOL.NS', 'SJVN.NS', 'IRCTC.NS', 'ADANIGREEN.NS']
+NIFTY_NEXT_300 = ['IRCON.NS', 'GRAPHITE.NS', 'KSB.NS', 'ACE.NS', 'WHIRLPOOL.NS', 'PTCIL.NS', 'BRIGADE.NS', 'MCX.NS', 'IEX.NS', 'APLLTD.NS', 'BSOFT.NS', 'CAMS.NS', 'ASAHIINDIA.NS', 'HINDCOPPER.NS', 'USHAMART.NS', 'RAINBOW.NS', 'JUSTDIAL.NS', 'LLOYDSME.NS', 'OLECTRA.NS', 'UJJIVANSFB.NS', 'POLYMED.NS', 'UCOBANK.NS', 'VTL.NS', 'CASTROLIND.NS', 'EIDPARRY.NS', 'PVRINOX.NS', 'RKFORGE.NS',
+                   'INDIAMART.NS', 'MASTEK.NS', 'ELGIEQUIP.NS', 'AKUMS.NS', 'CERA.NS', 'BATAINDIA.NS', 'WELSPUNLIV.NS', 'METROPOLIS.NS', 'GSFC.NS', 'DOMS.NS', 'FIVESTAR.NS', 'KFINTECH.NS', 'FSL.NS', 'BLS.NS', 'POWERINDIA.NS', 'KAJARIACER.NS', 'MEDANTA.NS', 'TRITURBINE.NS', 'NATIONALUM.NS', 'SIGNATURE.NS', 'TRIVENI.NS', 'NEWGEN.NS', 'KPRMILL.NS', '360ONE.NS', 'JYOTICNC.NS', 'RRKABEL.NS',
+                    'SKFINDIA.NS', 'SYRMA.NS', 'ANANTRAJ.NS', 'WESTLIFE.NS', 'SCHNEIDER.NS', 'CAPLIPOINT.NS', 'TEJASNET.NS', 'NETWEB.NS', 'TIMKEN.NS', 'ABBOTINDIA.NS', 'SUMICHEM.NS', 'INOXWIND.NS', 'ANGELONE.NS', 'HSCL.NS', 'ITI.NS', 'TRIDENT.NS', 'GPIL.NS', 'QUESS.NS', 'EMCURE.NS', 'STARHEALTH.NS', 'BIKAJI.NS', 'ALKYLAMINE.NS', 'THERMAX.NS', 'HEG.NS', 'VINATIORGA.NS', 'GICRE.NS', 'BEML.NS',
+                    'JUBLINGREA.NS', 'BALRAMCHIN.NS', 'AEGISLOG.NS', 'AAVAS.NS', 'CRAFTSMAN.NS', 'KARURVYSYA.NS', 'ASTRAZEN.NS', 'CHENNPETRO.NS', 'PFIZER.NS', 'INTELLECT.NS', 'EMAMILTD.NS', 'SHYAMMETL.NS', 'LINDEINDIA.NS', 'GODFRYPHLP.NS', 'VIJAYA.NS', 'JKTYRE.NS', 'RATNAMANI.NS', 'PGHH.NS', 'UNOMINDA.NS', 'HAPPSTMNDS.NS', 'DATAPATTNS.NS', 'NATCOPHARM.NS', 'ELECON.NS', 'NSLNISP.NS',
+                    'PEL.NS', 'JSL.NS', 'SONATSOFTW.NS', 'CDSL.NS', 'DEVYANI.NS', 'TVSSCS.NS', 'ENDURANCE.NS', 'CEATLTD.NS', 'TITAGARH.NS', 'HONAUT.NS', 'ALOKINDS.NS', 'ZENSARTECH.NS', 'INOXINDIA.NS', 'CONCORDBIO.NS', 'BBTC.NS', 'PCBL.NS', 'BALAMINES.NS', 'IFCI.NS', 'RADICO.NS', 'BAYERCROP.NS', 'TECHNOE.NS', 'LATENTVIEW.NS', 'RTNINDIA.NS', 'MAHLIFE.NS', 'FINEORG.NS', 'AIAENG.NS', 'PNCINFRA.NS',
+                    'EIHOTEL.NS', 'EASEMYTRIP.NS', 'MMTC.NS', 'KPIL.NS', 'AJANTPHARM.NS', 'ANANDRATHI.NS', 'UTIAMC.NS', 'SCI.NS', 'GRSE.NS', 'JINDALSAW.NS', '3MINDIA.NS', 'KIRLOSBROS.NS', 'JUBLPHARMA.NS', 'GNFC.NS', 'METROBRAND.NS', 'RITES.NS', 'RAYMOND.NS', 'BASF.NS', 'IIFL.NS', 'GODREJAGRO.NS', 'CHAMBLFERT.NS', 'CHALET.NS', 'CCL.NS', 'AFFLE.NS', 'NIACL.NS', 'SYNGENE.NS', 'SWSOLAR.NS', 'ISEC.NS',
+                    'VGUARD.NS', 'MOTILALOFS.NS', 'IPCALAB.NS', 'ZFCVINDIA.NS', 'ACI.NS', 'LALPATHLAB.NS', 'GLAND.NS', 'MANAPPURAM.NS', 'ERIS.NS', 'KNRCON.NS', 'INDGN.NS', 'CRISIL.NS', 'GLENMARK.NS', 'RENUKA.NS', 'CANFINHOME.NS', 'SUNTV.NS', 'CELLO.NS', 'BIRLACORPN.NS', 'INDIACEM.NS', 'GODIGIT.NS', 'MANYAVAR.NS', 'SPARC.NS', 'CARBORUNIV.NS', 'TATAINVEST.NS', 'JBCHEPHARM.NS', 'BLUESTARCO.NS',
+                    'APARINDS.NS', 'GVT&D.NS', 'ROUTE.NS', 'CENTRALBK.NS', 'CESC.NS', 'AMBER.NS', 'KEC.NS', 'ABREL.NS', 'MINDACORP.NS', 'ATUL.NS', 'MGL.NS', 'JMFINANCIL.NS', 'SUVENPHAR.NS', 'RAILTEL.NS', 'CAMPUS.NS', 'SANOFI.NS', 'GLAXO.NS', 'HFCL.NS', 'MSUMI.NS', 'BERGEPAINT.NS', 'GMDCLTD.NS', 'GESHIP.NS', 'ABSLAMC.NS', 'NBCC.NS', 'SAREGAMA.NS', 'RBLBANK.NS', 'LAURUSLABS.NS', 'JKLAKSHMI.NS', 'HONASA.NS',
+                    'NAVINFLUOR.NS', 'TTML.NS', 'CLEAN.NS', 'CHEMPLASTS.NS', 'GUJGASLTD.NS', 'SAMMAANCAP.NS', 'DBREALTY.NS', 'GRANULES.NS', 'FINPIPE.NS', 'CROMPTON.NS', 'PNBHOUSING.NS', 'JYOTHYLAB.NS', 'KEI.NS', 'RAJESHEXPO.NS', 'DALBHARAT.NS', 'KIMS.NS', 'APTUS.NS', 'SAPPHIRE.NS', 'VIPIND.NS', 'WELCORP.NS', 'NUVOCO.NS', 'CUB.NS', 'GPPL.NS', 'KANSAINER.NS', 'NUVAMA.NS', 'AVANTIFEED.NS', 'GSPL.NS',
+                    'RCF.NS', 'DEEPAKNTR.NS', 'JPPOWER.NS', 'LEMONTREE.NS', 'COROMANDEL.NS', 'AADHARHFC.NS', 'SWANENERGY.NS', 'GRINDWELL.NS', 'JBMA.NS', 'SCHAEFFLER.NS', 'J&KBANK.NS', 'JKCEMENT.NS', 'NH.NS', 'TANLA.NS', 'SUNDRMFAST.NS', 'PRAJIND.NS', 'DEEPAKFERT.NS', 'FLUOROCHEM.NS', 'NCC.NS', 'ASTERDM.NS', 'JWL.NS', 'SOBHA.NS', 'KAYNES.NS', 'PPLPHARMA.NS', 'RAMCOCEM.NS', 'VARROC.NS', 'GODREJIND.NS',
+                    'KIRLOSENG.NS', 'CENTURYPLY.NS', 'FINCABLES.NS', 'ZEEL.NS', 'FORTIS.NS', 'CGCL.NS', 'GAEL.NS', 'CREDITACC.NS', 'GILLETTE.NS', 'BLUEDART.NS', 'SBFC.NS', 'EQUITASBNK.NS', 'CIEINDIA.NS', 'NETWORK18.NS', 'MAPMYINDIA.NS', 'ARE&M.NS', 'AARTIIND.NS', 'AWL.NS', 'GRINFRA.NS', 'ECLERX.NS', 'NAM-INDIA.NS', 'HOMEFIRST.NS', 'REDINGTON.NS', 'RHIM.NS', 'CYIENT.NS', 'HBLENGINE.NS', 'MAHSEAMLES.NS',
+                    'CHOLAHLDNG.NS', 'UBL.NS', 'ENGINERSIN.NS', 'LTTS.NS', 'TBOTEK.NS']
 # Function to fetch stock data
 def get_stock_data(symbol, ma_days, ma_weights):
     stock = yf.Ticker(symbol)
@@ -22,7 +43,7 @@ def get_stock_data(symbol, ma_days, ma_weights):
         for days in ma_days:
             column_name = f"{days} Day MA"
             price_data[column_name] = price_data['Close'].rolling(window=days).mean()
-            ma_columns[column_name] = {'value': price_data[column_name].iloc[-1], 'broken': 'No'}
+            ma_columns[column_name] = price_data[column_name].iloc[-1]
 
         latest_data = price_data.iloc[-1]
         current_price = latest_data['Close']
@@ -32,49 +53,73 @@ def get_stock_data(symbol, ma_days, ma_weights):
         trend = "Neutral"  # Default to neutral trend
         trend_color = "#d3d3d3"
 
-        # Check moving averages individually
-        for ma_name, details in ma_columns.items():
-            if not np.isnan(details['value']):
-                prev_2_data = price_data.iloc[-3:]['Close']
-                if (prev_2_data.iloc[-1] > details['value']) and (prev_2_data.iloc[-2] <= details['value']):
-                    details['broken'] = 'Yes'
-                    highest_ma_broken = ma_name
-                    trend = "Upward"
-                    trend_color = "green"
-                elif (prev_2_data.iloc[-1] < details['value']) and (prev_2_data.iloc[-2] >= details['value']):
-                    details['broken'] = 'Yes'
-                    highest_ma_broken = ma_name
-                    trend = "Downward"
-                    trend_color = "red"
-                else:
-                    details['broken'] = 'No'
-        
-        # Check if stock is above or below all MAs
-        above_below = "-"
-        if all(current_price > details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
-            above_below = "Above All"
-        elif all(current_price < details['value'] for details in ma_columns.values() if not np.isnan(details['value'])):
-            above_below = "Below All"
+        ma_comparison = {
+            ma_name: ("Above" if current_price > ma_value else "Below")
+            for ma_name, ma_value in ma_columns.items()
+        }
 
+        # Trend Analysis Using Recent 5-Day Price Movement
+        last_5_prices = price_data['Close'].iloc[-5:].values
+        trend = "Neutral"
+        trend_color = "gray"
+
+        if last_5_prices[-1] > last_5_prices[0]:  # Uptrend in last 5 days
+            trend = "Uptrend"
+            trend_color = "#abf7b1"
+        elif last_5_prices[-1] < last_5_prices[0]:  # Downtrend in last 5 days
+            trend = "Downtrend"
+            trend_color = "#FF9A98"
         # Scoring system: +100 to -100
         score = 0  # Start with neutral score
         for ma_name, weight in ma_weights.items():
-            if ma_columns.get(ma_name, {}).get('broken') == 'Yes':
-                if trend == "Upward":
+            if ma_comparison.get(ma_name) == "Above":
+                if trend == "Uptrend":
                     score += weight
-                elif trend == "Downward":
+            elif ma_comparison.get(ma_name) == "Below":
+                if trend == "Downtrend":
                     score -= weight
+
+        # Detect Moving Average Crossovers
+        ma_crossovers = {}
+        for i in range(len(ma_days) - 1):
+            short_ma = f"{ma_days[i]} Day MA"
+            long_ma = f"{ma_days[i+1]} Day MA"
+
+            if short_ma in ma_columns and long_ma in ma_columns:
+                # Check if short MA is now above long MA but was below in the previous period
+                if len(price_data) < 2:
+                    ma_crossovers[f"{short_ma} crossing {long_ma}"] = "No"
+                    continue
+
+            previous_short_ma = price_data[short_ma].iloc[-2] if not pd.isna(price_data[short_ma].iloc[-2]) else None
+            previous_long_ma = price_data[long_ma].iloc[-2] if not pd.isna(price_data[long_ma].iloc[-2]) else None
+
+            current_short_ma =  price_data[short_ma].iloc[-1] if not pd.isna(price_data[short_ma].iloc[-1]) else None 
+            current_long_ma = price_data[long_ma].iloc[-1] if not pd.isna(price_data[long_ma].iloc[-1]) else None  # Most recent MA
+
+            if previous_short_ma is not None and previous_long_ma is not None:
+                # Bearish Crossover (Death Cross)
+                if previous_short_ma > previous_long_ma and current_short_ma < current_long_ma:
+                    ma_crossovers[f"{short_ma} crossing {long_ma}"] = "Yes"
+                    trend_color = "#B47EE5"
+                # Bullish Crossover (Golden Cross)
+                elif previous_short_ma < previous_long_ma and current_short_ma > current_long_ma:
+                    ma_crossovers[f"{short_ma} crossing {long_ma}"] = "Yes"
+                    trend_color = "yellow"
+                else:
+                    ma_crossovers[f"{short_ma} crossing {long_ma}"] = "No"
+                 
 
         result_data = {
             'Symbol': symbol.removesuffix(".NS"),
             'Latest Price': current_price,
-            'Above/Below All': above_below,
+            #'Above/Below All': above_below,
             'Score': score,
             'Trend': trend,
             '_trend_color': trend_color  # Keep as last column
         }
-        for ma_name in ma_columns:
-            result_data[ma_name] = ma_columns[ma_name]['broken']
+        result_data.update(ma_comparison) 
+        result_data.update(ma_crossovers)  # Add MA crossovers
 
         return price_data, result_data
     except Exception as e:
@@ -96,7 +141,7 @@ def get_fundamental_data(symbol):
         if pe_ratio != "N/A":
             pe_ratio = round(float(pe_ratio),2)
         sector = info.get("sector", "N/A")
-        market_cap = info.get('marketCap', 'N/A') // 10000000
+        market_cap = info.get('marketCap' , 'N/A') // 10000000
         revenue_growth = financials.get("revenueGrowth", "N/A")
         fii_dii_holding = key_stats.get("heldPercentInstitutions", "N/A")
 
@@ -124,25 +169,43 @@ def get_fundamental_data(symbol):
 def main():
     st.title("Stock Moving Average Breakout Analysis")
 
-    # Sidebar input
-    st.sidebar.subheader("Upload or Enter Tickers")
-    uploaded_file = st.sidebar.file_uploader("Upload CSV with a single 'symbol' column without empty rows.", type="csv")
-
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        if 'symbol' not in df.columns:
-            st.error("Uploaded CSV must have a 'symbol' column.")
-            return
-        symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
-
-        #Reset session state to ensure new data is processed
-        if "uploaded_symbols" not in st.session_state or st.session_state["uploaded_symbols"] != symbols:
-            st.session_state.clear()  # Reset session state if new file is uploaded
-            st.session_state["uploaded_symbols"] = symbols  # Store uploaded symbols
+    st.sidebar.subheader("Stock Selection")
+    selection_option = st.sidebar.selectbox("Select Stock Category", ["Upload CSV / Manual Entry", "NIFTY Top 50", "NIFTY NEXT 150", "NIFTY NEXT 300"])
     
-    else:
-        symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE,ANGELONE,IRFC,IRCON,NMDC,TCS,LT")
-        symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
+    # Reset session state when selection changes
+    if "previous_selection" not in st.session_state or st.session_state["previous_selection"] != selection_option:
+        st.session_state.clear()
+        st.session_state["previous_selection"] = selection_option  # Store selection
+
+    symbols = []
+    
+    if selection_option == "Upload CSV / Manual Entry":
+        # Sidebar input
+        uploaded_file = st.sidebar.file_uploader("Upload CSV with a single 'symbol' column without empty rows.", type="csv")
+
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file)
+            if 'symbol' not in df.columns:
+                st.error("Uploaded CSV must have a 'symbol' column.")
+                return
+            symbols = [symbol.strip().upper() + '.NS' for symbol in df['symbol']]
+
+            #Reset session state to ensure new data is processed
+            if "uploaded_symbols" not in st.session_state or st.session_state["uploaded_symbols"] != symbols:
+                st.session_state.clear()  # Reset session state if new file is uploaded
+                st.session_state["uploaded_symbols"] = symbols  # Store uploaded symbols
+        
+        else:
+            symbols_input = st.sidebar.text_input("Enter stock symbols (comma-separated)", value="SBIN,PHARMABEES,ULTRACEMCO,AXISBANK,BHARTIARTL,ZOMATO,PAYTM,OFSS,INDIGO,HAL,PERSISTENT,POLYCAB,BSE,MTNL,CDSL,NUVAMA,APARINDS,TECHNOE,TRIVENI,360ONE,JYOTISTRUC,CONCORDBIO,ZENTEC,GOLDIAM,GRAVITA,NEWGEN,ZAGGLE,ANGELONE,IRFC,IRCON,NMDC,TCS,LT")
+            symbols = [symbol.strip().upper() + '.NS' for symbol in symbols_input.split(',')]
+
+    elif selection_option == "NIFTY Top 50":
+        symbols = NIFTY_TOP_50
+    elif selection_option == "NIFTY NEXT 150":
+        symbols = NIFTY_NEXT_150
+    elif selection_option == "NIFTY NEXT 300":
+        symbols = NIFTY_NEXT_300
+
 
     # Moving averages selection
     st.sidebar.subheader("Moving Averages Settings")
@@ -173,14 +236,14 @@ def main():
     # Display results
     if results:
         results_df = pd.DataFrame(results)
-        results_df = results_df.sort_values(by='Score', key=abs, ascending=False).reset_index(drop=True)
+        results_df = results_df.sort_values(by='Score' , key=abs, ascending=False).reset_index(drop=True)
         st.subheader("Stock Signals")
 
         # Extract trend colors before dropping the column
         trend_colors = results_df['_trend_color']
         
         # Remove the internal color column
-        results_df = results_df.drop('_trend_color', axis=1)
+        results_df = results_df.drop('_trend_color' , axis=1)
 
         # Modified highlight function to use the stored colors
         def highlight_trend(row):
